@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\CalendarEvents;
 use App\Models\form_entry;
 use App\Models\School;
+use Carbon\Carbon;
 
 
 class CalendarController extends Controller
@@ -199,6 +200,11 @@ class CalendarController extends Controller
     {
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
+        if (!$startDate || !$endDate) {
+            $currentMonth = Carbon::now()->startOfMonth();
+            $startDate = $currentMonth->format('Y-m-d');
+            $endDate = $currentMonth->endOfMonth()->format('Y-m-d');
+        }
 
         $categoryMap = [
             1 => 'Psychologist',
@@ -220,10 +226,9 @@ class CalendarController extends Controller
         $datesQuery = DB::table('form_data')
             ->whereIn('key', array_keys($dateKeysToCategory))
             ->whereNotNull('value')
-            ->where('value', '!=', '');
-        if ($startDate && $endDate) {
-            $datesQuery->whereBetween('value', [$startDate, $endDate]);
-        }
+            ->where('value', '!=', '')
+            ->whereBetween('value', [$startDate, $endDate])
+            ->select('entry_id','key','value');
         $datesRows = $datesQuery->get();
         $entryIds = $datesRows->pluck('entry_id')->unique()->values()->all();
 
@@ -234,39 +239,55 @@ class CalendarController extends Controller
 
         $students = $studentsQuery->get();
 
-        // phone from form_data
-        $phoneRows = DB::table('form_data')
+        $fdAgg = DB::table('form_data')
             ->whereIn('entry_id', $entryIds)
-            ->where('key', 'Emergency_Contact_Number')
+            ->whereIn('key', ['Emergency_Contact_Number','Gr_Number','Class','class','Reason_for_Referral','type_of_encounter'])
+            ->selectRaw("entry_id,
+                MAX(CASE WHEN `key`='Emergency_Contact_Number' THEN `value` END) AS phone,
+                MAX(CASE WHEN `key`='Gr_Number' THEN `value` END) AS gr,
+                MAX(CASE WHEN `key` IN ('Class','class') THEN `value` END) AS class,
+                MAX(CASE WHEN `key`='Reason_for_Referral' THEN `value` END) AS reason,
+                MAX(CASE WHEN `key`='type_of_encounter' THEN `value` END) AS encounter")
+            ->groupBy('entry_id')
             ->get()
-            ->groupBy('entry_id');
+            ->keyBy('entry_id');
 
-        // gr number from form_data
-        $grRows = DB::table('form_data')
-            ->whereIn('entry_id', $entryIds)
-            ->where('key', 'Gr_Number')
-            ->get()
-            ->groupBy('entry_id');
-
-        // precompute past follow-up counts per (school, gr_number)
-        $pastCountsRaw = DB::table('form_entries as fe2')
-            ->leftJoin('form_data as gr2', function($join) {
-                $join->on('gr2.entry_id', '=', 'fe2.id')
-                     ->where('gr2.key', 'Gr_Number');
-            })
-            ->join('form_data as fd2', function($join) {
-                $join->on('fd2.entry_id', '=', 'fe2.id')
-                     ->where('fd2.key', 'Follow_up_Required');
-            })
-            ->whereRaw('LOWER(fd2.value) = ?', ['yes'])
-            ->select('fe2.school as school_id', 'gr2.value as grno', DB::raw('COUNT(*) as cnt'))
-            ->groupBy('fe2.school', 'gr2.value')
-            ->get();
+        $schoolByEntry = [];
+        $schoolIds = [];
+        $grNumbers = [];
+        foreach ($students as $stu) {
+            $schoolByEntry[$stu->entry_id] = $stu->school_id;
+            $schoolIds[] = $stu->school_id;
+            $aggTmp = $fdAgg->get($stu->entry_id);
+            if ($aggTmp && !empty($aggTmp->gr)) {
+                $grNumbers[] = (string)$aggTmp->gr;
+            }
+        }
+        $schoolIds = array_values(array_unique($schoolIds));
+        $grNumbers = array_values(array_unique($grNumbers));
 
         $pastCounts = [];
-        foreach ($pastCountsRaw as $pc) {
-            if (!empty($pc->grno)) {
-                $pastCounts[$pc->school_id][$pc->grno] = (int)$pc->cnt;
+        if (!empty($schoolIds) && !empty($grNumbers)) {
+            $pastCountsRaw = DB::table('form_entries as fe2')
+                ->leftJoin('form_data as gr2', function($join) {
+                    $join->on('gr2.entry_id', '=', 'fe2.id')
+                         ->where('gr2.key', 'Gr_Number');
+                })
+                ->join('form_data as fd2', function($join) {
+                    $join->on('fd2.entry_id', '=', 'fe2.id')
+                         ->where('fd2.key', 'Follow_up_Required');
+                })
+                ->whereRaw('LOWER(fd2.value) = ?', ['yes'])
+                ->whereIn('fe2.school', $schoolIds)
+                ->whereIn('gr2.value', $grNumbers)
+                ->select('fe2.school as school_id', 'gr2.value as grno', DB::raw('COUNT(*) as cnt'))
+                ->groupBy('fe2.school', 'gr2.value')
+                ->get();
+
+            foreach ($pastCountsRaw as $pc) {
+                if (!empty($pc->grno)) {
+                    $pastCounts[$pc->school_id][$pc->grno] = (int)$pc->cnt;
+                }
             }
         }
 
@@ -278,16 +299,7 @@ class CalendarController extends Controller
                 $datesByEntry[$r->entry_id][$cat] = $r->value;
             }
         }
-
-        // reason and encounter per entry
-        $reasonRows = DB::table('form_data')
-            ->whereIn('entry_id', $entryIds)
-            ->where('key', 'Reason_for_Referral')
-            ->get()->groupBy('entry_id');
-        $encRows = DB::table('form_data')
-            ->whereIn('entry_id', $entryIds)
-            ->where('key', 'type_of_encounter')
-            ->get()->groupBy('entry_id');
+        
 
         // build summary per date and category
         $dateSummary = [];
@@ -296,28 +308,21 @@ class CalendarController extends Controller
             // Iterate follow-up dates for this entry by mapped category
             $datesForEntry = isset($datesByEntry[$entryId]) ? $datesByEntry[$entryId] : [];
             foreach ($datesForEntry as $catName => $date) {
-                if ($startDate && $endDate) {
-                    if (!($date >= $startDate && $date <= $endDate)) continue;
-                }
+                if (!($date >= $startDate && $date <= $endDate)) continue;
                 if (!isset($dateSummary[$date])) {
                     foreach ($categories as $c) {
                         $dateSummary[$date][$c] = ['count' => 0, 'students' => []];
                     }
                 }
-                $reason = '';
-                if (isset($reasonRows[$entryId]) && $reasonRows[$entryId]->count()) {
-                    $reason = (string)($reasonRows[$entryId]->first()->value ?? '');
-                }
-                $encounter = '';
-                if (isset($encRows[$entryId]) && $encRows[$entryId]->count()) {
-                    $encounter = (string)($encRows[$entryId]->first()->value ?? '');
-                }
+                $agg = $fdAgg->get($entryId);
+                $reason = $agg ? (string)($agg->reason ?? '') : '';
+                $encounter = $agg ? (string)($agg->encounter ?? '') : '';
                 $followupType = 'Follow-up 1';
                 $dateSummary[$date][$catName]['count']++;
                 $dateSummary[$date][$catName]['students'][] = [
                     'entry_id' => $entryId,
                     'name' => $stu->student_name,
-                    'phone' => isset($phoneRows[$entryId]) && $phoneRows[$entryId]->count() ? (string)$phoneRows[$entryId]->first()->value : '',
+                    'phone' => $agg ? (string)($agg->phone ?? '') : '',
                     'school_name' => $stu->school_name,
                     'referral_date' => $date,
                     'reason_for_referral' => $reason,
@@ -334,9 +339,7 @@ class CalendarController extends Controller
             ->where('sb.deleted', 0)
             ->whereNotNull('shp.Follow_up_Date')
             ->where('shp.Follow_up_Date', '!=', '');
-        if ($startDate && $endDate) {
-            $gpQuery->whereBetween('shp.Follow_up_Date', [$startDate, $endDate]);
-        }
+        $gpQuery->whereBetween('shp.Follow_up_Date', [$startDate, $endDate]);
         $gpRows = $gpQuery->select('shp.Follow_up_Date as fdate', 'shp.Reason_for_Follow_up as reason', 'sb.name', 'sb.GRNo', 'sb.class', 'sb.Emergency_Contact_Number', 'sb.type_of_encounter', 's.school_name', 'sb.id as biodata_id')->get();
         foreach ($gpRows as $r) {
             $date = $r->fdate;
@@ -369,9 +372,7 @@ class CalendarController extends Controller
             ->where('sb.deleted', 0)
             ->whereNotNull('nhes.Follow_up_Date1')
             ->where('nhes.Follow_up_Date1', '!=', '');
-        if ($startDate && $endDate) {
-            $nutQuery->whereBetween('nhes.Follow_up_Date1', [$startDate, $endDate]);
-        }
+        $nutQuery->whereBetween('nhes.Follow_up_Date1', [$startDate, $endDate]);
         $nutRows = $nutQuery->select('nhes.Follow_up_Date1 as fdate', 'nhes.Reason_for_Follow_up1 as reason', 'sb.name', 'sb.GRNo', 'sb.class', 'sb.Emergency_Contact_Number', 'sb.type_of_encounter', 's.school_name', 'sb.id as biodata_id')->get();
         foreach ($nutRows as $r) {
             $date = $r->fdate;
@@ -404,9 +405,7 @@ class CalendarController extends Controller
             ->where('sb.deleted', 0)
             ->whereNotNull('phas.Follow_up_Date2')
             ->where('phas.Follow_up_Date2', '!=', '');
-        if ($startDate && $endDate) {
-            $psyQuery->whereBetween('phas.Follow_up_Date2', [$startDate, $endDate]);
-        }
+        $psyQuery->whereBetween('phas.Follow_up_Date2', [$startDate, $endDate]);
         $psyRows = $psyQuery->select('phas.Follow_up_Date2 as fdate', 'phas.Reason_for_Follow_up2 as reason', 'sb.name', 'sb.GRNo', 'sb.class', 'sb.Emergency_Contact_Number', 'sb.type_of_encounter', 's.school_name', 'sb.id as biodata_id')->get();
         foreach ($psyRows as $r) {
             $date = $r->fdate;
@@ -455,6 +454,14 @@ class CalendarController extends Controller
             }
             $data[] = $row;
         }
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'events' => $events,
+                'data' => $data,
+                'types' => $categories,
+            ]);
+        }
+
         return view('Calendar.new_calendar', [
             'data' => $data,
             'types' => $categories,
@@ -755,4 +762,3 @@ class CalendarController extends Controller
         return response()->json(['data' => $summary]);
     }
 }
-

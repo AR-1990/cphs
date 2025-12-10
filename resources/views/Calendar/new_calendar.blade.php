@@ -319,7 +319,7 @@
 
     document.addEventListener('DOMContentLoaded', function () {
         const calendarEl = document.getElementById('calendar');
-        const initialEvents = {!! $events_json ?? '[]' !!};
+        const initialEvents = [];
 
         mainCalendar = new FullCalendar.Calendar(calendarEl, {
             initialView: 'dayGridMonth',
@@ -332,6 +332,11 @@
                 dayGridMonth: 'Month',
                 timeGridWeek: 'Week',
                 timeGridDay: 'Day'
+            },
+            datesSet: async function(info) {
+                const start = moment(info.start).format('YYYY-MM-DD');
+                const end = moment(info.end).subtract(1, 'day').format('YYYY-MM-DD');
+                await fetchEventsForRange(start, end);
             },
             dateClick: function(info) {
                 fetchFollowupsByDate(info.dateStr);
@@ -453,6 +458,23 @@
             document.getElementById("studentModal").classList.add("show");
         } catch (e) {
             console.error('Failed to fetch follow-ups:', e);
+            hideLoader();
+        }
+    }
+
+    async function fetchEventsForRange(startStr, endStr) {
+        try {
+            showLoader();
+            const url = `{{ route('new_calendar') }}`;
+            const response = await fetch(url + `?start_date=${encodeURIComponent(startStr)}&end_date=${encodeURIComponent(endStr)}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            const payload = await response.json();
+            const events = Array.isArray(payload.events) ? payload.events : [];
+            mainCalendar.removeAllEvents();
+            events.forEach(ev => mainCalendar.addEvent(ev));
+            hideLoader();
+        } catch (e) {
             hideLoader();
         }
     }

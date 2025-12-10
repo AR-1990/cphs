@@ -510,6 +510,7 @@ class MedicalHistoryController extends Controller
     /* sendEmail*/
     public function sendEmail(Request $request)
     {
+        // dd($request->all());
         if ($request->isMethod('post')) {
 
 
@@ -526,7 +527,8 @@ class MedicalHistoryController extends Controller
             $cc = $request->input('cc');
             $bcc = $request->input('bcc', 'abdurrehmanashraf.ghazitech@gmail.com');
             $subject = $request->input('subject');
-            $messageBody = $request->input('message');
+           $messageBody = $request->input('message');
+
 
 
             $pdfPath = storage_path('app/public/pdfs/' . basename($request->pdfPath));
@@ -555,8 +557,7 @@ class MedicalHistoryController extends Controller
             $MedicalHistoryEmail->message = $messageBody;
             $MedicalHistoryEmail->pdfPath = $request->pdfPath;
             $MedicalHistoryEmail->save();
-
-
+// dd($messageBody);
 
             try {
 
