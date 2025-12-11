@@ -3888,6 +3888,14 @@ class AdminFormController extends Controller
 
         $results = DB::table('form_entries')
             ->join('schools', 'form_entries.school', '=', 'schools.id')
+            ->leftJoin('wasting as w', function($join){
+                $join->on('w.Months', '=', DB::raw('TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at)'));
+                $join->on('w.Sex', '=', DB::raw('LOWER(form_entries.gender)'));
+            })
+            ->leftJoin('bmiForAge as b', function($join){
+                $join->on('b.Months', '=', DB::raw('TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at)'));
+                $join->on('b.Sex', '=', DB::raw("IF(LOWER(form_entries.gender)='male','Male',IF(LOWER(form_entries.gender)='female','Female',NULL))"));
+            })
             ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
                 return $q->whereBetween('form_entries.created_at', [
                     $startDate . ' 00:00:00',
@@ -3920,7 +3928,8 @@ class AdminFormController extends Controller
                 DB::raw('COUNT(CASE WHEN form_data.key IN ("question_no_47_side-to-side_curvature_in_the_spine_resembling", "Question_No_47_side_to_side_curvature_in_the_spine_resembling") AND form_data.value IN ("C_Shape", "S_Shape") THEN form_entries.id END) as side_to_side_curvatureCount'),
                 DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_47_Any_foot_or_toe_abnormalities", "Question_No_49_Any_foot_or_toe_abnormalities") AND form_data.value IN ("Flat Feet","Varus","Valgus","High Arch","Hammer Toe","Bunion") THEN form_entries.id END) as footOrToeCount'),
                 DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_54_Do_you_have_any_Allergies", "Question_No_55_Do_you_have_any_Allergies") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as AllergiesCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (CAST(form_data.value AS DECIMAL(10,2)) <= 18.40 OR CAST(form_data.value AS DECIMAL(10,2)) >= 24.10) THEN form_entries.id END) as bmiCount'),
+                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= w.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < w.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= w.Pos3SD))) OR ((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) > 60 AND TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 228) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= b.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < b.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= b.Pos3SD)))) THEN form_entries.id END) as bmiModerateCount'),
+                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) < w.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos3SD))) OR ((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) > 60 AND TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 228) AND ((CAST(form_data.value AS DECIMAL(10,2)) < b.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos3SD)))) THEN form_entries.id END) as bmiSevereCount'),
                 DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_11_Look_For_anemia", "Question_No_10_Look_For_anemia") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as anemiaCount'),
                 DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_24_Normal_Color_vision", "Question_No_27_Normal_Color_vision") AND form_data.value IN ("No","no") THEN form_entries.id END) as ColorVisionCount'),
                 DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_24_Visual_acuity_using_Snellens_chart" AND form_data.value IN ("20/30 (6/9) - Below average","20/40 (6/12) - Minimum requirement for driving","20/50 (6/15) - Mild vision impairment","20/60 (6/18) - Blurred vision","20/80 (6/24) - Moderate vision impairment","20/100 (6/30) - Moderate to severe impairment","20/125 (6/38) - Vision severely compromised","20/160 (6/48) - Very poor distance vision","20/200 (6/60) - Legally blind") THEN form_entries.id END) as VisualAcuityRightCount'),
@@ -3976,7 +3985,7 @@ class AdminFormController extends Controller
                 $school->side_to_side_curvatureCount +
                 $school->footOrToeCount +
                 $school->AllergiesCount +
-                $school->bmiCount+
+                ($school->bmiModerateCount + $school->bmiSevereCount)+
                 $school->anemiaCount +
                 $school->ColorVisionCount +
                 $school->VisualAcuityRightCount +
@@ -4025,10 +4034,60 @@ class AdminFormController extends Controller
     }
 
 
-  public function getReportableFindingsBySchool(Request $request)
+    public function getReportableFindingsBySchool(Request $request)
     {
         $schoolId = $request->input('school_id');
         $finding = $request->input('finding');
+
+        if (in_array($finding, ['bmi_moderate','bmi_severe'])) {
+            $monthsExpr = 'TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at)';
+            $rows = DB::table('form_entries')
+                ->join('form_data', 'form_entries.id', '=', 'form_data.entry_id')
+                ->leftJoin('users', 'form_entries.enterby', '=', 'users.id')
+                ->leftJoin('wasting as w', function($join) use ($monthsExpr){
+                    $join->on('w.Months', '=', DB::raw($monthsExpr));
+                    $join->on('w.Sex', '=', DB::raw('LOWER(form_entries.gender)'));
+                })
+                ->leftJoin('bmiForAge as b', function($join) use ($monthsExpr){
+                    $join->on('b.Months', '=', DB::raw($monthsExpr));
+                    $join->on('b.Sex', '=', DB::raw("IF(LOWER(form_entries.gender)='male','Male',IF(LOWER(form_entries.gender)='female','Female',NULL))"));
+                })
+                ->select(
+                    'form_entries.id', 'form_entries.name', 'form_entries.lname', 'form_entries.phone', 'users.fullname as result_by',
+                    DB::raw('CAST(form_data.value AS DECIMAL(10,2)) as bmi'),
+                    DB::raw("CASE WHEN ($monthsExpr) <= 60 THEN CASE WHEN CAST(form_data.value AS DECIMAL(10,2)) < w.Neg3SD THEN 'Severe Thinness' WHEN CAST(form_data.value AS DECIMAL(10,2)) > w.Pos3SD THEN 'Obesity' WHEN CAST(form_data.value AS DECIMAL(10,2)) >= w.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < w.Neg2SD THEN 'Moderate Thinness' WHEN CAST(form_data.value AS DECIMAL(10,2)) > w.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= w.Pos3SD THEN 'Overweight' ELSE '' END ELSE CASE WHEN CAST(form_data.value AS DECIMAL(10,2)) < b.Neg3SD THEN 'Severe Thinness' WHEN CAST(form_data.value AS DECIMAL(10,2)) > b.Pos3SD THEN 'Obesity' WHEN CAST(form_data.value AS DECIMAL(10,2)) >= b.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < b.Neg2SD THEN 'Moderate Thinness' WHEN CAST(form_data.value AS DECIMAL(10,2)) > b.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= b.Pos3SD THEN 'Overweight' ELSE '' END END as classification")
+                )
+                ->where('form_entries.school', $schoolId)
+                ->where('form_data.key', 'Question_No_3_BMI')
+                ->when($request->start_date && $request->end_date, function($q) use ($request) {
+                    return $q->whereBetween('form_entries.created_at', [
+                        $request->start_date . ' 00:00:00',
+                        $request->end_date . ' 23:59:59'
+                    ]);
+                })
+                ->where(function($q) use ($monthsExpr, $finding){
+                    if ($finding === 'bmi_severe') {
+                        $q->whereRaw("((($monthsExpr) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) < w.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos3SD)))")
+                          ->orWhereRaw("((($monthsExpr) > 60 AND ($monthsExpr) <= 228) AND ((CAST(form_data.value AS DECIMAL(10,2)) < b.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos3SD)))");
+                    } else {
+                        $q->whereRaw("((($monthsExpr) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= w.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < w.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= w.Pos3SD)))")
+                          ->orWhereRaw("((($monthsExpr) > 60 AND ($monthsExpr) <= 228) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= b.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < b.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= b.Pos3SD)))");
+                    }
+                })
+                ->get();
+
+            $result = $rows->map(function($r){
+                return [
+                    'id' => $r->id,
+                    'name' => $r->name,
+                    'lname' => $r->lname,
+                    'phone' => $r->phone,
+                    'result' => $r->classification,
+                    'result_by' => $r->result_by,
+                ];
+            });
+            return response()->json(['status' => 'success', 'data' => $result]);
+        }
 
         // Map finding to keys/values using getReportableConditions
         $conditions = $this->getReportableConditions();
@@ -4091,6 +4150,7 @@ class AdminFormController extends Controller
         if (!isset($findingMap[$finding])) {
             return response()->json(['status' => 'error', 'data' => []]);
         }
+        // (Handled earlier for performance.)
         // Special handling for BMI using Question_No_3_BMI numeric thresholds
         if ($finding === 'bmiresult') {
             $students = DB::table('form_entries')

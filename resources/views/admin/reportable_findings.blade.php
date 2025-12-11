@@ -227,7 +227,8 @@
                         <th>Side-to-Side Curvature</th>
                         <th>Foot or Toe Abnormalities</th>
                         <th>Allergies</th>
-                        <th>BMI</th>
+                        <th>BMI (Moderate)</th>
+                        <th>BMI (Severe)</th>
                         <th>Anemia</th>
                         <th>Color Vision</th>
                         <th>Dental Caries</th>
@@ -290,7 +291,8 @@
                         <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="side_to_side_curvature">{{ $school->side_to_side_curvatureCount }}</button></td>
                         <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="footOrToe">{{ $school->footOrToeCount }}</button></td>
                         <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Allergies">{{ $school->AllergiesCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="bmiresult">{{ $school->bmiCount }}</button></td>
+                        <td> <button class="counts btn btn-warning" data-school="{{ $school->id }}" data-finding="bmi_moderate">{{ $school->bmiModerateCount ?? 0 }}</button></td>
+                        <td> <button class="counts btn btn-danger" data-school="{{ $school->id }}" data-finding="bmi_severe">{{ $school->bmiSevereCount ?? 0 }}</button></td>
                         <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="anemia">{{ $school->anemiaCount }}</button></td>
                         <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ColorVision">{{ $school->ColorVisionCount }}</button></td>
                         <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="caries">{{ $school->cariesCount }}</button></td>
