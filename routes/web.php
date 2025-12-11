@@ -389,3 +389,4 @@ Route::get('/psychologistIdentifiedgetdata', 'App\Http\Controllers\AdminPanel\Ad
 Route::get('/nutritionistassesmentfields', 'App\Http\Controllers\AdminPanel\AdminFormController@nutritionistassesmentfields')->name('nutritionistassesmentfields');
 Route::get('/nutritionistIdentifiedgetdata', 'App\Http\Controllers\AdminPanel\AdminFormController@nutritionistIdentifiedgetdata')->name('nutritionistIdentifiedgetdata');
 Route::post('admin/get-finding-count', 'App\Http\Controllers\AdminPanel\AdminFormController@getFindingCount')->name('admin.getFindingCount');
+Route::post('admin/get-school-finding-counts', 'App\Http\Controllers\AdminPanel\AdminFormController@getSchoolFindingCounts')->name('admin.getSchoolFindingCounts');

@@ -267,52 +267,51 @@
                         <td>{{ $school->school_name }}</td>
                         <td>{{ $school->total_students ?? 0 }}</td>
                         <td>{{ $screenedBySchool[$school->id] ?? 0 }}</td>
-                        <td><b>{{ $schoolTotals[$school->school_name] ?? 0 }}</b></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="NormalPosture">{{ $school->NormalPostureCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="jaundice">{{ $school->jaundiceCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="clubing">{{ $school->clubingCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="skin">{{ $school->skinCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="nail">{{ $school->nailCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="lice">{{ $school->liceCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="hair">{{ $school->hairCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Scalp">{{ $school->ScalpCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ocular">{{ $school->ocularCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="VisualAcuityRight">{{ $school->VisualAcuityRightCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="VisualAcuityLeft">{{ $school->VisualAcuityLeftCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Nystagmus">{{ $school->NystagmusCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="EarExamination">{{ $school->EarExaminationCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ExaminationNasal">{{ $school->ExaminationNasalCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="asses">{{ $school->assesCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ExamineTonsile">{{ $school->ExamineTonsileCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="NeckSweling">{{ $school->NeckSwelingCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ChestDeformaty">{{ $school->ChestDeformatyCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="CardiacAuscultation">{{ $school->CardiacAuscultationCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="jointMotion">{{ $school->jointMotionCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="side_to_side_curvature">{{ $school->side_to_side_curvatureCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="footOrToe">{{ $school->footOrToeCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Allergies">{{ $school->AllergiesCount }}</button></td>
-                        <td> <button class="counts btn btn-warning" data-school="{{ $school->id }}" data-finding="bmi_moderate">{{ $school->bmiModerateCount ?? 0 }}</button></td>
-                        <td> <button class="counts btn btn-danger" data-school="{{ $school->id }}" data-finding="bmi_severe">{{ $school->bmiSevereCount ?? 0 }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="anemia">{{ $school->anemiaCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ColorVision">{{ $school->ColorVisionCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="caries">{{ $school->cariesCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Breath">{{ $school->BreathCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="DiscussHygiene">{{ $school->DiscussHygieneCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Uniform">{{ $school->UniformCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="HairProblem">{{ $school->HairProblemCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="EarShape">{{ $school->EarShapeCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="RinnerWeber">{{ $school->RinnerWeberCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="potensyTest">{{ $school->potensyTestCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="SpeechDev">{{ $school->SpeechDevCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="LungAuscultation">{{ $school->LungAuscultationCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ScarsMasses">{{ $school->ScarsMassesCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="SpinalCurvature">{{ $school->SpinalCurvatureCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Epi">{{ $school->EpiCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="DiscomfortDuringUrination">{{ $school->DiscomfortDuringUrinationCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="MenstrualAbnormality">{{ $school->MenstrualAbnormalityCount }}</button></td>
-                      
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="lifestyle">{{ $school->lifestyleCount }}</button></td>
-                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="addiction">{{ $school->addictionCount }}</button></td>
+                        <td><b class="total-findings">-</b></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="NormalPosture"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="jaundice"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="clubing"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="skin"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="nail"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="lice"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="hair"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Scalp"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ocular"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="VisualAcuityRight"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="VisualAcuityLeft"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Nystagmus"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="EarExamination"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ExaminationNasal"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="asses"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ExamineTonsile"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="NeckSweling"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ChestDeformaty"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="CardiacAuscultation"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="jointMotion"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="side_to_side_curvature"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="footOrToe"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Allergies"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-warning" data-school="{{ $school->id }}" data-finding="bmi_moderate"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-danger" data-school="{{ $school->id }}" data-finding="bmi_severe"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="anemia"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ColorVision"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="caries"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Breath"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="DiscussHygiene"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Uniform"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="HairProblem"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="EarShape"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="RinnerWeber"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="potensyTest"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="SpeechDev"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="LungAuscultation"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="ScarsMasses"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="SpinalCurvature"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="Epi"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="DiscomfortDuringUrination"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="MenstrualAbnormality"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="lifestyle"><span class="count">-</span></button></td>
+                        <td> <button class="counts btn btn-primary" data-school="{{ $school->id }}" data-finding="addiction"><span class="count">-</span></button></td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -374,8 +373,42 @@
                 leftColumns: 3 // pehle 2 columns freeze
             }
         });
+        const csrf = $('meta[name="csrf-token"]').attr('content');
+        const loadUrl = "{{ route('admin.getSchoolFindingCounts') }}";
+        const startDate = $('#start_date').val();
+        const endDate = $('#end_date').val();
 
-        
+        const loaded = new Set();
+        function loadCountsForSchool(schoolId){
+            if (loaded.has(schoolId)) return;
+            loaded.add(schoolId);
+            $.ajax({
+                url: loadUrl,
+                type: 'POST',
+                data: { school_id: schoolId, start_date: startDate, end_date: endDate, _token: csrf },
+                success: function(resp){
+                    const counts = resp.counts || {};
+                    const total = resp.total || 0;
+                    $(".counts[data-school='"+schoolId+"']").each(function(){
+                        const key = $(this).data('finding');
+                        const val = counts.hasOwnProperty(key) ? counts[key] : 0;
+                        $(this).find('.count').text(val);
+                    });
+                    const row = $(".counts[data-school='"+schoolId+"']").first().closest('tr');
+                    row.find('.total-findings').text(total);
+                }
+            });
+        }
+
+        function loadVisibleRows(){
+            const visibleIds = [...new Set($('.counts').map(function(){ return $(this).data('school'); }).get())];
+            visibleIds.forEach(loadCountsForSchool);
+        }
+
+        loadVisibleRows();
+        $('#findingreport-table').on('draw.dt', function(){
+            loadVisibleRows();
+        });
 
         $(document).on('click', '#exportCsvBtn', function() {
             let csv = [];

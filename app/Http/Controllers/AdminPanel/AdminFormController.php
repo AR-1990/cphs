@@ -3874,28 +3874,8 @@ class AdminFormController extends Controller
       function reportable_findings(Request $request){
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
-
-        $query = DB::table('schools')
-            ->join('form_entries', 'schools.id', '=', 'form_entries.school')
-            ->join('form_data', 'form_entries.id', '=', 'form_data.entry_id');
-
-        if ($startDate && $endDate) {
-            $query->whereBetween('form_entries.created_at', [
-                $startDate . ' 00:00:00',
-                $endDate . ' 23:59:59'
-            ]);
-        }
-
         $results = DB::table('form_entries')
             ->join('schools', 'form_entries.school', '=', 'schools.id')
-            ->leftJoin('wasting as w', function($join){
-                $join->on('w.Months', '=', DB::raw('TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at)'));
-                $join->on('w.Sex', '=', DB::raw('LOWER(form_entries.gender)'));
-            })
-            ->leftJoin('bmiForAge as b', function($join){
-                $join->on('b.Months', '=', DB::raw('TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at)'));
-                $join->on('b.Sex', '=', DB::raw("IF(LOWER(form_entries.gender)='male','Male',IF(LOWER(form_entries.gender)='female','Female',NULL))"));
-            })
             ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
                 return $q->whereBetween('form_entries.created_at', [
                     $startDate . ' 00:00:00',
@@ -3905,56 +3885,8 @@ class AdminFormController extends Controller
             ->select(
                 'schools.id',
                 'schools.school_name',
-                DB::raw('(SELECT COUNT(*) FROM form_entries fe WHERE fe.school = schools.id) as total_students'),
-                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_8_Normal_Posture_Gait" AND form_data.value = "No" THEN form_entries.id END) as NormalPostureCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_9_Mental_Status", "Question_No_8_Mental_Status") AND form_data.value = "Lethargic" THEN form_entries.id END) as MentalStatusCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_10_Look_For_jaundice", "Question_No_9_Look_For_jaundice") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as jaundiceCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_11_Look_For_Clubbing", "Question_No_12_Look_For_Clubbing") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as clubingCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_14_Skin", "Question_No_13_Skin") AND form_data.value IN ("Rash","Allergy","Lesion","Bruises") THEN form_entries.id END) as skinCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_16_Nails", "Question_No_15_Nails") AND form_data.value IN ("Dirty","dirty") THEN form_entries.id END) as nailCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_18_Lice_nits", "Question_No_17_Lice/nits") AND form_data.value IN ("yes","Yes") THEN form_entries.id END) as liceCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_20_Hair_and_Scalp", "Question_No_19_Hair_and_Scalp") AND form_data.value IN ("Color-faded") THEN form_entries.id END) as hairCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_22_Scalp", "Question_No_22_Scalp") AND form_data.value IN ("Scaly","Dry","Moist") THEN form_entries.id END) as ScalpCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_25_Normal_ocular_alignment", "Question_No_22_Normal_ocular_alignment") AND form_data.value IN ("no","No") THEN form_entries.id END) as ocularCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_28_Nystagmus", "Question_No_25_Nystagmus") AND form_data.value IN ("yes","Yes") THEN form_entries.id END) as NystagmusCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_27_Ear_examination", "Question_No_30_Ear_examination") AND form_data.value IN ("Ear wax","Canal infection") THEN form_entries.id END) as EarExaminationCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_32_External_nasal_examinaton", "Question_No_29_External_inasal_examinaton") AND form_data.value IN ("Deformities", "Swelling","Redness","Lesions","Nasal Discharge","Crusting") THEN form_entries.id END) as ExaminationNasalCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_34_Assess_gingiva", "Question_No_31_Assess_gingiva") AND form_data.value IN ("Infection", "Bleed") THEN form_entries.id END) as assesCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_36_Examine_tonsils", "Question_No_34_Examine_tonsils") AND form_data.value IN ("tonsillitis", "Tonsillitis") THEN form_entries.id END) as ExamineTonsileCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_36_Any_Neck_swelling", "Question_No_38_Any_Neck_swelling") AND form_data.value IN ("yes", "Yes") THEN form_entries.id END) as NeckSwelingCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_38_Any_visible_chest_deformity", "Question_No_40_Any_visible_chest_deformity") AND form_data.value IN ("yes", "Yes") THEN form_entries.id END) as ChestDeformatyCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_42_Cardiac_Auscultation", "Question_No_40_Cardiac_Auscultation") AND form_data.value IN ("Murmur", "murmur") THEN form_entries.id END) as CardiacAuscultationCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_45_Did_you_observe_any_limitations_in_the_child_s_range_of_joint_motion_during_your_examination", "Question_No_43_Did_you_observe_any_limitations_in_the_child") AND form_data.value IN ("Yes", "yes") THEN form_entries.id END) as jointMotionCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("question_no_47_side-to-side_curvature_in_the_spine_resembling", "Question_No_47_side_to_side_curvature_in_the_spine_resembling") AND form_data.value IN ("C_Shape", "S_Shape") THEN form_entries.id END) as side_to_side_curvatureCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_47_Any_foot_or_toe_abnormalities", "Question_No_49_Any_foot_or_toe_abnormalities") AND form_data.value IN ("Flat Feet","Varus","Valgus","High Arch","Hammer Toe","Bunion") THEN form_entries.id END) as footOrToeCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_54_Do_you_have_any_Allergies", "Question_No_55_Do_you_have_any_Allergies") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as AllergiesCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= w.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < w.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= w.Pos3SD))) OR ((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) > 60 AND TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 228) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= b.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < b.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= b.Pos3SD)))) THEN form_entries.id END) as bmiModerateCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) < w.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos3SD))) OR ((TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) > 60 AND TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at) <= 228) AND ((CAST(form_data.value AS DECIMAL(10,2)) < b.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos3SD)))) THEN form_entries.id END) as bmiSevereCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_11_Look_For_anemia", "Question_No_10_Look_For_anemia") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as anemiaCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_24_Normal_Color_vision", "Question_No_27_Normal_Color_vision") AND form_data.value IN ("No","no") THEN form_entries.id END) as ColorVisionCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_24_Visual_acuity_using_Snellens_chart" AND form_data.value IN ("20/30 (6/9) - Below average","20/40 (6/12) - Minimum requirement for driving","20/50 (6/15) - Mild vision impairment","20/60 (6/18) - Blurred vision","20/80 (6/24) - Moderate vision impairment","20/100 (6/30) - Moderate to severe impairment","20/125 (6/38) - Vision severely compromised","20/160 (6/48) - Very poor distance vision","20/200 (6/60) - Legally blind") THEN form_entries.id END) as VisualAcuityRightCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_24B_Visual_acuity_using_Snellens_chart_left_eye" AND form_data.value IN ("20/30 (6/9) - Below average","20/40 (6/12) - Minimum requirement for driving","20/50 (6/15) - Mild vision impairment","20/60 (6/18) - Blurred vision","20/80 (6/24) - Moderate vision impairment","20/100 (6/30) - Moderate to severe impairment","20/125 (6/38) - Vision severely compromised","20/160 (6/48) - Very poor distance vision","20/200 (6/60) - Legally blind") THEN form_entries.id END) as VisualAcuityLeftCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_32_Are_there_dental_caries", "Question_No_35_Are_there_dental_caries") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as cariesCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_15_Breath", "Question_No_14_Breath") AND form_data.value IN ("Bad Breath","Bad Breath") THEN form_entries.id END) as BreathCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_19_Discuss_hygiene_routines_and_practices", "Question_No_18_Discuss_hygiene_routines_and_practices") AND form_data.value IN ("not-aware","not-aware") THEN form_entries.id END) as DiscussHygieneCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_17_Uniform_or_shoes", "Question_No_16_Uniform_or_shoes") AND form_data.value IN ("Untidy","Untidy") THEN form_entries.id END) as UniformCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_21_Any_Hair_Problem", "Question_No_21_Any_Hair_Problem") AND form_data.value IN ("Kinky","Brittle","Dry") THEN form_entries.id END) as HairProblemCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_29_Normal_ears_shape_and_position", "Question_No_26_Normal_ears_shape_and_position") AND form_data.value IN ("No","no") THEN form_entries.id END) as EarShapeCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_31_Conclusion_of_hearing_test_with_Rinner_and_Weber", "Question_No_28_Conclusion_of_hearing_test_with_Rinner_and_Weber") AND form_data.value IN ("right_ear_conductive_hearing_loss","left_ear_conductive_hearing_loss","right_ear_sensorineural_hearing_lossleft_ear_sensorineural_hearing_loss") THEN form_entries.id END) as RinnerWeberCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_33_perform_a_nasal_patency_test") AND form_data.value IN ("DNS","Obstruction") THEN form_entries.id END) as potensyTestCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_37_Normal_Speech_development","Question_No_35_Normal_Speech_development") AND form_data.value IN ("No","no") THEN form_entries.id END) as SpeechDevCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_41_Lung_Auscultation","Question_No_39_Lung_Auscultation") AND form_data.value IN ("Ronchi","Wheezing","Crackles","Vesicular Diminished Breath Sound(specify)") THEN form_entries.id END) as LungAuscultationCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_no_43_did_you_observe_any_distension_scars_or_masses_on_the_childs_abdomen") AND form_data.value IN ("Distention","Scar","Mass") THEN form_entries.id END) as ScarsMassesCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_46_Spinal_curvature_assessment_tick_positive_finding","Question_No_44_Spinal_curvature_assessment_(tick_positive_finding)") AND form_data.value IN ("Uneven shoulders","Shoulder Blade","Uneven waist","Hips") THEN form_entries.id END) as SpinalCurvatureCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_50_Have_EPI_immunization_card","Question_No_48_Have_EPI_immunization_card?") AND form_data.value IN ("No","no") THEN form_entries.id END) as EpiCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_57_Inquire_about_urinary_frequency,_urgency,_and_any_pain_or_discomfort_during_urination","Question_No_56_Inquire_about_urinary_frequency,_urgency,_and_any_pain_or_discomfort_during_urination") AND form_data.value IN ("Urinary frequency","Urinary urgency","Pain or discomfort during urination","Nocturnal enuresis") THEN form_entries.id END) as DiscomfortDuringUrinationCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("QuestionNo_58_Any_menstrual_abnormality","QuestionNo_57_Any_menstrual_abnormality") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as MenstrualAbnormalityCount'),
-               
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_60_How_would_you_describe_your_lifestyle") AND form_data.value IN ("Sedentary") THEN form_entries.id END) as lifestyleCount'),
-                DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No66_Does_the_child_have_any_history_of_substances_abuse_or_addiction_to") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as addictionCount'),
-
-                )
-            ->Join('form_data', 'form_entries.id', '=', 'form_data.entry_id')
+                DB::raw('(SELECT COUNT(*) FROM form_entries fe WHERE fe.school = schools.id) as total_students')
+            )
             ->groupBy('schools.id', 'schools.school_name')
             ->paginate(50);
 
@@ -3963,54 +3895,10 @@ class AdminFormController extends Controller
         $grandTotal = 0;
         $screenedBySchool = [];
         foreach ($results as $school) {
-            $rowTotal = (
-                $school->NormalPostureCount +
-                $school->jaundiceCount +
-                $school->clubingCount +
-                $school->skinCount +
-                $school->nailCount +
-                $school->liceCount +
-                $school->hairCount +
-                $school->ScalpCount +
-                $school->ocularCount +
-                $school->NystagmusCount +
-                $school->EarExaminationCount +
-                $school->ExaminationNasalCount +
-                $school->assesCount +
-                $school->ExamineTonsileCount +
-                $school->NeckSwelingCount +
-                $school->ChestDeformatyCount +
-                $school->CardiacAuscultationCount +
-                $school->jointMotionCount +
-                $school->side_to_side_curvatureCount +
-                $school->footOrToeCount +
-                $school->AllergiesCount +
-                ($school->bmiModerateCount + $school->bmiSevereCount)+
-                $school->anemiaCount +
-                $school->ColorVisionCount +
-                $school->VisualAcuityRightCount +
-                $school->VisualAcuityLeftCount +
-                $school->cariesCount +
-                $school->BreathCount +
-                $school->DiscussHygieneCount +
-                $school->UniformCount +
-                $school->HairProblemCount +
-                $school->EarShapeCount +
-                $school->RinnerWeberCount +
-                $school->potensyTestCount +
-                $school->SpeechDevCount +
-                $school->LungAuscultationCount +
-                $school->ScarsMassesCount +
-                $school->SpinalCurvatureCount +
-                $school->EpiCount +
-                $school->DiscomfortDuringUrinationCount +
-                $school->MenstrualAbnormalityCount +
-                
-                $school->lifestyleCount +
-                $school->addictionCount 
-            );
-            $schoolTotals[$school->school_name] = $rowTotal;
-            $grandTotal += $rowTotal;// Calculate screened students for this school
+            $schoolTotals[$school->school_name] = 0;
+            $grandTotal += 0;
+            
+            // Calculate screened students for this school
             $screenedQuery = DB::table('form_entries')
                 ->where('school', $school->id);
             if ($startDate && $endDate) {
@@ -4040,7 +3928,7 @@ class AdminFormController extends Controller
         $finding = $request->input('finding');
 
         if (in_array($finding, ['bmi_moderate','bmi_severe'])) {
-            $monthsExpr = 'TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at)';
+            $monthsExpr = 'IF(form_entries.dob IS NULL, form_entries.age*12, TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at))';
             $rows = DB::table('form_entries')
                 ->join('form_data', 'form_entries.id', '=', 'form_data.entry_id')
                 ->leftJoin('users', 'form_entries.enterby', '=', 'users.id')
@@ -4281,6 +4169,137 @@ class AdminFormController extends Controller
             ];
         }
         return response()->json(['status' => 'success', 'data' => $result]);
+    }
+
+    public function getSchoolFindingCounts(Request $request)
+    {
+        try {
+            $schoolId = $request->input('school_id');
+            $startDate = $request->input('start_date');
+            $endDate = $request->input('end_date');
+
+            $monthsExpr = 'IF(form_entries.dob IS NULL, form_entries.age*12, TIMESTAMPDIFF(MONTH, form_entries.dob, form_entries.created_at))';
+
+            $query = DB::table('form_entries')
+                ->join('form_data', 'form_entries.id', '=', 'form_data.entry_id')
+                ->leftJoin('wasting as w', function($join) use ($monthsExpr){
+                    $join->on('w.Months', '=', DB::raw($monthsExpr));
+                    $join->on('w.Sex', '=', DB::raw('LOWER(form_entries.gender)'));
+                })
+                ->leftJoin('bmiForAge as b', function($join) use ($monthsExpr){
+                    $join->on('b.Months', '=', DB::raw($monthsExpr));
+                    $join->on('b.Sex', '=', DB::raw("IF(LOWER(form_entries.gender)='male','Male',IF(LOWER(form_entries.gender)='female','Female',NULL))"));
+                })
+                ->where('form_entries.school', $schoolId)
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                    return $q->whereBetween('form_entries.created_at', [
+                        $startDate . ' 00:00:00',
+                        $endDate . ' 23:59:59'
+                    ]);
+                })
+                ->whereIn('form_data.key', [
+                    'Question_No_8_Normal_Posture_Gait',
+                    'Question_No_9_Mental_Status','Question_No_8_Mental_Status',
+                    'Question_No_10_Look_For_jaundice','Question_No_9_Look_For_jaundice',
+                    'Question_No_11_Look_For_Clubbing','Question_No_12_Look_For_Clubbing',
+                    'Question_No_14_Skin','Question_No_13_Skin',
+                    'Question_No_16_Nails','Question_No_15_Nails',
+                    'Question_No_18_Lice_nits','Question_No_17_Lice/nits',
+                    'Question_No_20_Hair_and_Scalp','Question_No_19_Hair_and_Scalp',
+                    'Question_No_22_Scalp',
+                    'Question_No_25_Normal_ocular_alignment','Question_No_22_Normal_ocular_alignment',
+                    'Question_No_28_Nystagmus','Question_No_25_Nystagmus',
+                    'Question_No_27_Ear_examination','Question_No_30_Ear_examination',
+                    'Question_No_32_External_nasal_examinaton','Question_No_29_External_inasal_examinaton',
+                    'Question_No_34_Assess_gingiva','Question_No_31_Assess_gingiva',
+                    'Question_No_36_Examine_tonsils','Question_No_34_Examine_tonsils',
+                    'Question_No_36_Any_Neck_swelling','Question_No_38_Any_Neck_swelling',
+                    'Question_No_38_Any_visible_chest_deformity','Question_No_40_Any_visible_chest_deformity',
+                    'Question_No_42_Cardiac_Auscultation','Question_No_40_Cardiac_Auscultation',
+                    'Question_No_45_Did_you_observe_any_limitations_in_the_child_s_range_of_joint_motion_during_your_examination','Question_No_43_Did_you_observe_any_limitations_in_the_child',
+                    'question_no_47_side-to-side_curvature_in_the_spine_resembling','Question_No_47_side_to_side_curvature_in_the_spine_resembling',
+                    'Question_No_47_Any_foot_or_toe_abnormalities','Question_No_49_Any_foot_or_toe_abnormalities',
+                    'Question_No_54_Do_you_have_any_Allergies','Question_No_55_Do_you_have_any_Allergies',
+                    'Question_No_3_BMI',
+                    'Question_No_11_Look_For_anemia','Question_No_10_Look_For_anemia',
+                    'Question_No_24_Normal_Color_vision','Question_No_27_Normal_Color_vision',
+                    'Question_No_24_Visual_acuity_using_Snellens_chart','Question_No_24B_Visual_acuity_using_Snellens_chart_left_eye',
+                    'Question_No_32_Are_there_dental_caries','Question_No_35_Are_there_dental_caries',
+                    'Question_No_15_Breath','Question_No_14_Breath',
+                    'Question_No_19_Discuss_hygiene_routines_and_practices','Question_No_18_Discuss_hygiene_routines_and_practices',
+                    'Question_No_17_Uniform_or_shoes','Question_No_16_Uniform_or_shoes',
+                    'Question_No_21_Any_Hair_Problem',
+                    'Question_No_29_Normal_ears_shape_and_position','Question_No_26_Normal_ears_shape_and_position',
+                    'Question_No_31_Conclusion_of_hearing_test_with_Rinner_and_Weber','Question_No_28_Conclusion_of_hearing_test_with_Rinner_and_Weber',
+                    'Question_No_33_perform_a_nasal_patency_test',
+                    'Question_No_37_Normal_Speech_development','Question_No_35_Normal_Speech_development',
+                    'Question_No_41_Lung_Auscultation','Question_No_39_Lung_Auscultation',
+                    'Question_no_43_did_you_observe_any_distension_scars_or_masses_on_the_childs_abdomen',
+                    'Question_No_46_Spinal_curvature_assessment_tick_positive_finding','Question_No_44_Spinal_curvature_assessment_(tick_positive_finding)',
+                    'Question_No_50_Have_EPI_immunization_card','Question_No_48_Have_EPI_immunization_card?',
+                    'Question_No_57_Inquire_about_urinary_frequency,_urgency,_and_any_pain_or_discomfort_during_urination','Question_No_56_Inquire_about_urinary_frequency,_urgency,_and_any_pain_or_discomfort_during_urination',
+                    'QuestionNo_58_Any_menstrual_abnormality','QuestionNo_57_Any_menstrual_abnormality',
+                    'Question_No_60_How_would_you_describe_your_lifestyle','Question_No66_Does_the_child_have_any_history_of_substances_abuse_or_addiction_to'
+                ])
+                ->select(
+                    DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_8_Normal_Posture_Gait" AND form_data.value = "No" THEN form_entries.id END) as NormalPosture'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_9_Mental_Status", "Question_No_8_Mental_Status") AND form_data.value = "Lethargic" THEN form_entries.id END) as MentalStatus'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_10_Look_For_jaundice", "Question_No_9_Look_For_jaundice") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as jaundice'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_11_Look_For_Clubbing", "Question_No_12_Look_For_Clubbing") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as clubing'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_14_Skin", "Question_No_13_Skin") AND form_data.value IN ("Rash","Allergy","Lesion","Bruises") THEN form_entries.id END) as skin'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_16_Nails", "Question_No_15_Nails") AND form_data.value IN ("Dirty","dirty") THEN form_entries.id END) as nail'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_18_Lice_nits", "Question_No_17_Lice/nits") AND form_data.value IN ("yes","Yes") THEN form_entries.id END) as lice'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_20_Hair_and_Scalp", "Question_No_19_Hair_and_Scalp") AND form_data.value IN ("Color-faded") THEN form_entries.id END) as hair'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_22_Scalp", "Question_No_22_Scalp") AND form_data.value IN ("Scaly","Dry","Moist") THEN form_entries.id END) as Scalp'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_25_Normal_ocular_alignment", "Question_No_22_Normal_ocular_alignment") AND form_data.value IN ("no","No") THEN form_entries.id END) as ocular'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_28_Nystagmus", "Question_No_25_Nystagmus") AND form_data.value IN ("yes","Yes") THEN form_entries.id END) as Nystagmus'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_27_Ear_examination", "Question_No_30_Ear_examination") AND form_data.value IN ("Ear wax","Canal infection") THEN form_entries.id END) as EarExamination'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_32_External_nasal_examinaton", "Question_No_29_External_inasal_examinaton") AND form_data.value IN ("Deformities", "Swelling","Redness","Lesions","Nasal Discharge","Crusting") THEN form_entries.id END) as ExaminationNasal'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_34_Assess_gingiva", "Question_No_31_Assess_gingiva") AND form_data.value IN ("Infection", "Bleed") THEN form_entries.id END) as asses'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_36_Examine_tonsils", "Question_No_34_Examine_tonsils") AND form_data.value IN ("tonsillitis", "Tonsillitis") THEN form_entries.id END) as ExamineTonsile'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_36_Any_Neck_swelling", "Question_No_38_Any_Neck_swelling") AND form_data.value IN ("yes", "Yes") THEN form_entries.id END) as NeckSweling'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_38_Any_visible_chest_deformity", "Question_No_40_Any_visible_chest_deformity") AND form_data.value IN ("yes", "Yes") THEN form_entries.id END) as ChestDeformaty'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_42_Cardiac_Auscultation", "Question_No_40_Cardiac_Auscultation") AND form_data.value IN ("Murmur", "murmur") THEN form_entries.id END) as CardiacAuscultation'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_45_Did_you_observe_any_limitations_in_the_child_s_range_of_joint_motion_during_your_examination", "Question_No_43_Did_you_observe_any_limitations_in_the_child") AND form_data.value IN ("Yes", "yes") THEN form_entries.id END) as jointMotion'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("question_no_47_side-to-side_curvature_in_the_spine_resembling", "Question_No_47_side_to_side_curvature_in_the_spine_resembling") AND form_data.value IN ("C_Shape", "S_Shape") THEN form_entries.id END) as side_to_side_curvature'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_47_Any_foot_or_toe_abnormalities", "Question_No_49_Any_foot_or_toe_abnormalities") AND form_data.value IN ("Flat Feet","Varus","Valgus","High Arch","Hammer Toe","Bunion") THEN form_entries.id END) as footOrToe'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_54_Do_you_have_any_Allergies", "Question_No_55_Do_you_have_any_Allergies") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as Allergies'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_11_Look_For_anemia", "Question_No_10_Look_For_anemia") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as anemia'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_24_Normal_Color_vision", "Question_No_27_Normal_Color_vision") AND form_data.value IN ("No","no") THEN form_entries.id END) as ColorVision'),
+                    DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_24_Visual_acuity_using_Snellens_chart" AND form_data.value IN ("20/30 (6/9) - Below average","20/40 (6/12) - Minimum requirement for driving","20/50 (6/15) - Mild vision impairment","20/60 (6/18) - Blurred vision","20/80 (6/24) - Moderate vision impairment","20/100 (6/30) - Moderate to severe impairment","20/125 (6/38) - Vision severely compromised","20/160 (6/48) - Very poor distance vision","20/200 (6/60) - Legally blind") THEN form_entries.id END) as VisualAcuityRight'),
+                    DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_24B_Visual_acuity_using_Snellens_chart_left_eye" AND form_data.value IN ("20/30 (6/9) - Below average","20/40 (6/12) - Minimum requirement for driving","20/50 (6/15) - Mild vision impairment","20/60 (6/18) - Blurred vision","20/80 (6/24) - Moderate vision impairment","20/100 (6/30) - Moderate to severe impairment","20/125 (6/38) - Vision severely compromised","20/160 (6/48) - Very poor distance vision","20/200 (6/60) - Legally blind") THEN form_entries.id END) as VisualAcuityLeft'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_32_Are_there_dental_caries", "Question_No_35_Are_there_dental_caries") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as caries'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_15_Breath", "Question_No_14_Breath") AND form_data.value IN ("Bad Breath","Bad Breath") THEN form_entries.id END) as Breath'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_19_Discuss_hygiene_routines_and_practices", "Question_No_18_Discuss_hygiene_routines_and_practices") AND form_data.value IN ("not-aware","not-aware") THEN form_entries.id END) as DiscussHygiene'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_17_Uniform_or_shoes", "Question_No_16_Uniform_or_shoes") AND form_data.value IN ("Untidy","Untidy") THEN form_entries.id END) as Uniform'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_21_Any_Hair_Problem", "Question_No_21_Any_Hair_Problem") AND form_data.value IN ("Kinky","Brittle","Dry") THEN form_entries.id END) as HairProblem'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_29_Normal_ears_shape_and_position", "Question_No_26_Normal_ears_shape_and_position") AND form_data.value IN ("No","no") THEN form_entries.id END) as EarShape'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_31_Conclusion_of_hearing_test_with_Rinner_and_Weber", "Question_No_28_Conclusion_of_hearing_test_with_Rinner_and_Weber") AND form_data.value IN ("right_ear_conductive_hearing_loss","left_ear_conductive_hearing_loss","right_ear_sensorineural_hearing_loss","left_ear_sensorineural_hearing_loss") THEN form_entries.id END) as RinnerWeber'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_33_perform_a_nasal_patency_test") AND form_data.value IN ("DNS","Obstruction") THEN form_entries.id END) as potensyTest'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_37_Normal_Speech_development","Question_No_35_Normal_Speech_development") AND form_data.value IN ("No","no") THEN form_entries.id END) as SpeechDev'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_41_Lung_Auscultation","Question_No_39_Lung_Auscultation") AND form_data.value IN ("Ronchi","Wheezing","Crackles","Vesicular Diminished Breath Sound(specify)") THEN form_entries.id END) as LungAuscultation'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_no_43_did_you_observe_any_distension_scars_or_masses_on_the_childs_abdomen") AND form_data.value IN ("Distention","Scar","Mass") THEN form_entries.id END) as ScarsMasses'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_46_Spinal_curvature_assessment_tick_positive_finding","Question_No_44_Spinal_curvature_assessment_(tick_positive_finding)") AND form_data.value IN ("Uneven shoulders","Shoulder Blade","Uneven waist","Hips") THEN form_entries.id END) as SpinalCurvature'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_50_Have_EPI_immunization_card","Question_No_48_Have_EPI_immunization_card?") AND form_data.value IN ("No","no") THEN form_entries.id END) as Epi'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_57_Inquire_about_urinary_frequency,_urgency,_and_any_pain_or_discomfort_during_urination","Question_No_56_Inquire_about_urinary_frequency,_urgency,_and_any_pain_or_discomfort_during_urination") AND form_data.value IN ("Urinary frequency","Urinary urgency","Pain or discomfort during urination","Nocturnal enuresis") THEN form_entries.id END) as DiscomfortDuringUrination'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("QuestionNo_58_Any_menstrual_abnormality","QuestionNo_57_Any_menstrual_abnormality") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as MenstrualAbnormality'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No_60_How_would_you_describe_your_lifestyle") AND form_data.value IN ("Sedentary") THEN form_entries.id END) as lifestyle'),
+                    DB::raw('COUNT(CASE WHEN form_data.key IN ("Question_No66_Does_the_child_have_any_history_of_substances_abuse_or_addiction_to") AND form_data.value IN ("Yes","yes") THEN form_entries.id END) as addiction'),
+                    DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (((( ' . $monthsExpr . ' ) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= w.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < w.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= w.Pos3SD))) OR (((( ' . $monthsExpr . ' ) > 60 AND ( ' . $monthsExpr . ' ) <= 228)) AND ((CAST(form_data.value AS DECIMAL(10,2)) >= b.Neg3SD AND CAST(form_data.value AS DECIMAL(10,2)) < b.Neg2SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos2SD AND CAST(form_data.value AS DECIMAL(10,2)) <= b.Pos3SD)))) THEN form_entries.id END) as bmi_moderate'),
+                    DB::raw('COUNT(CASE WHEN form_data.key = "Question_No_3_BMI" AND (((( ' . $monthsExpr . ' ) <= 60) AND ((CAST(form_data.value AS DECIMAL(10,2)) < w.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > w.Pos3SD))) OR (((( ' . $monthsExpr . ' ) > 60 AND ( ' . $monthsExpr . ' ) <= 228)) AND ((CAST(form_data.value AS DECIMAL(10,2)) < b.Neg3SD) OR (CAST(form_data.value AS DECIMAL(10,2)) > b.Pos3SD)))) THEN form_entries.id END) as bmi_severe')
+                )
+                ->first();
+
+            $counts = (array) $query;
+            $total = 0;
+            foreach ($counts as $k => $v) {
+                if (is_numeric($v)) $total += (int) $v;
+            }
+
+            return response()->json(['counts' => $counts, 'total' => $total]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => true, 'message' => $e->getMessage()], 500);
+        }
     }
 
             public function getCaseDetails(Request $request)

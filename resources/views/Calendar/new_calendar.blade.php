@@ -54,6 +54,8 @@
         padding: 20px;
         width: 95%;
         max-width: 1100px;
+        max-height: 85vh;
+        overflow-y: auto;
         border-radius: 10px;
         box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
         animation: slideUp 0.3s ease forwards;
