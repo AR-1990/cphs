@@ -356,6 +356,9 @@ Route::match(array('get', 'post'), '/follow-up/{id?}/{followId?}', 'App\Http\Con
 Route::match(array('get', 'post'), '/follow-up-list/{id?}/{followId?}', 'App\Http\Controllers\AdminPanel\AdminFormController@followUpList')->name('follow-up-list');
 Route::match(array('get', 'post'), '/follow-up-list-datatable/{id?}/{followId?}', 'App\Http\Controllers\AdminPanel\AdminFormController@followUpListDatatable')->name('followUpListDatatable');
 
+Route::match(array('get', 'post'), '/follow-up-join', 'App\\Http\\Controllers\\AdminPanel\\AdminFormController@followUpJoinList')->name('followUpJoinList');
+Route::match(array('get', 'post'), '/follow-up-join-datatable', 'App\\Http\\Controllers\\AdminPanel\\AdminFormController@followUpJoinListDatatable')->name('followUpJoinListDatatable');
+
 
 Route::get("/dashboard_new", function () {
     return view("admin.dashboard_new");

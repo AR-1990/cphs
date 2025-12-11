@@ -228,8 +228,22 @@
                         <span class="sidebar-menu-text">Calendar</span>
                     </a>
                 </li>
+                <li class="sidebar-menu-item {{ request()->routeIs('new_calendar') ? 'active' : '' }}">
+                    <a class="sidebar-menu-button" href="{{ route('new_calendar') }}">
+                        <span class="material-icons sidebar-menu-icon sidebar-menu-icon--left">date_range</span>
+                        <span class="sidebar-menu-text">New Calendar</span>
+                    </a>
+                </li>
+                {{--
                 <li class="sidebar-menu-item {{ request()->routeIs('follow-up-list') ? 'active' : '' }}">
                     <a class="sidebar-menu-button" href="{{ route('follow-up-list') }}">
+                        <span class="material-icons sidebar-menu-icon sidebar-menu-icon--left">send</span>
+                        <span class="sidebar-menu-text">Follow Up</span>
+                    </a>
+                </li>
+                --}}
+                <li class="sidebar-menu-item {{ request()->routeIs('followUpJoinList') ? 'active' : '' }}">
+                    <a class="sidebar-menu-button" href="{{ route('followUpJoinList') }}">
                         <span class="material-icons sidebar-menu-icon sidebar-menu-icon--left">send</span>
                         <span class="sidebar-menu-text">Follow Up</span>
                     </a>

@@ -3496,6 +3496,77 @@ class AdminFormController extends Controller
 
 
     }
+
+    public function followUpJoinList(Request $request)
+    {
+        return view('admin.followUpJoinList');
+    }
+
+    public function followUpJoinListDatatable(Request $request)
+    {
+        $adminUser = auth()->guard('admin')->user();
+        $UserID = $adminUser ? $adminUser->id : null;
+        $UserRole = $adminUser ? $adminUser->role : null;
+
+        $query = DB::table('followUp as f')
+            ->join('student_biodata as sb', 'f.ref', '=', 'sb.id')
+            ->join('schools as s', 'sb.School_Name', '=', 's.id')
+            ->where('sb.deleted', 0)
+            ->select(
+                'sb.id as biodata_id',
+                'sb.GRNo as GRNo',
+                'sb.name as name',
+                's.school_name as School_Name',
+                'f.icd as icd',
+                'f.created_at as created_at'
+            )
+            ->orderBy('sb.id', 'desc');
+
+        if ($UserRole === 2 && $UserID) {
+            $query->where(function ($q) use ($UserID) {
+                $q->where('sb.created_by', $UserID)->orWhere('sb.updated_by', $UserID);
+            });
+        }
+
+        if ($request->has('schoolId') && $request->input('schoolId')) {
+            $query->where('s.id', $request->input('schoolId'));
+        }
+
+        $startDate = $request->input('startDate') ?? $request->input('fromDate');
+        $endDate = $request->input('endDate') ?? $request->input('toDate');
+        if ($startDate && $endDate) {
+            $query->whereBetween('f.created_at', [$startDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        } elseif ($startDate && !$endDate) {
+            $query->whereBetween('f.created_at', [$startDate . ' 00:00:00', $startDate . ' 23:59:59']);
+        } elseif ($endDate && !$startDate) {
+            $query->whereBetween('f.created_at', [$endDate . ' 00:00:00', $endDate . ' 23:59:59']);
+        }
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->editColumn('created_at', function ($row) {
+                return $row->created_at ? Carbon::parse($row->created_at)->format('Y-m-d') : 'N/A';
+            })
+            ->filterColumn('GRNo', function ($q, $keyword) {
+                $q->where('sb.GRNo', 'like', "%$keyword%");
+            })
+            ->filterColumn('name', function ($q, $keyword) {
+                $q->where('sb.name', 'like', "%$keyword%");
+            })
+            ->filterColumn('School_Name', function ($q, $keyword) {
+                $q->where('s.school_name', 'like', "%$keyword%");
+            })
+            ->filterColumn('icd', function ($q, $keyword) {
+                $q->where('f.icd', 'like', "%$keyword%");
+            })
+            ->addColumn('action', function ($row) {
+                $btn = '';
+                $btn .= ' <a href="' . Route('ViewMedicalHistory1') . '/' . $row->biodata_id . '" title="View"><i class="fa fa-eye iic"></i></a>';
+                return $btn;
+            })
+            ->rawColumns(['action'])
+            ->make(true);
+    }
     /* follow-up */
     public function followUpView(request $request, $id, $followId = null)
     {
