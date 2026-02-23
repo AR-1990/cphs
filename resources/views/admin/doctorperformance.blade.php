@@ -144,23 +144,37 @@
                                     {{ $item->fullname }}
                                 </td>
                                 <td>
-                                        @if(!empty($item->designation) && $item->designation == 1)
-
+                                        @if (!empty($item->designation) && $item->designation == 1)
                                             Doctor
-                                        @elseif(!empty($item->designation) && $item->designation == 2)
-
-                                        Nutritionist
-                                        
-                                        @elseif(!empty($item->designation) && $item->designation == 3)
-
-                                        Psychologist
-
+                                        @elseif (!empty($item->designation) && $item->designation == 2)
+                                            Nutritionist
+                                        @elseif (!empty($item->designation) && $item->designation == 3)
+                                            Psychologist
+                                        @elseif (!empty($item->designation) && $item->designation == 4)
+                                            Founder and Director
+                                        @elseif (!empty($item->designation) && $item->designation == 5)
+                                            Co Founder And chief Ooperating Officer
+                                        @elseif (!empty($item->designation) && $item->designation == 6)
+                                            Chief Advisor And Business Support Manager
+                                        @elseif (!empty($item->designation) && $item->designation == 7)
+                                            Clinical Operations Lead
+                                        @elseif (!empty($item->designation) && $item->designation == 8)
+                                            Adminstrive Coordinator
+                                        @elseif (!empty($item->designation) && $item->designation == 9)
+                                            Clinical Psychologist
+                                        @elseif (!empty($item->designation) && $item->designation == 10)
+                                            Clinical Nutritionist
+                                        @elseif (!empty($item->designation) && $item->designation == 11)
+                                            School Health Physican (KIRAN FOUNDATION)
+                                        @elseif (!empty($item->designation) && $item->designation == 12)
+                                            School Health Physican (SAVE THE FUTURE)
+                                        @elseif (!empty($item->designation) && $item->designation == 13)
+                                            School Health Physican (THE SET SCHOOL)
+                                        @elseif (!empty($item->designation) && $item->designation == 14)
+                                            School Health Physican (LOCUM)
                                         @else
-
-                                        N/A
-
+                                            N/A
                                         @endif
-
                                 </td>
                                 <td>
                                     {{ $item->count }}

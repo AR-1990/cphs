@@ -3744,15 +3744,17 @@ class AdminFormController extends Controller
 
     public function doc_performance(Request $request)
     {
-
-
-        $data = DB::table('form_entries')
-            ->select('users.id as UserID', 'users.designation as designation', 'users.fullname', 'form_entries.scan_count', DB::raw('COUNT(*) as count'))
-            ->join('users', 'form_entries.enterby', '=', 'users.id')
-            ->groupBy('form_entries.enterby', 'users.fullname')
+        $data = User::whereIn('role', [1, 2])
+            ->leftJoin('form_entries', 'users.id', '=', 'form_entries.enterby')
+            ->select(
+                'users.id as UserID',
+                'users.designation as designation',
+                'users.fullname',
+                DB::raw('COALESCE(SUM(form_entries.scan_count), 0) as scan_count'),
+                DB::raw('COUNT(form_entries.id) as count')
+            )
+            ->groupBy('users.id', 'users.designation', 'users.fullname')
             ->get();
-
-        //   dd($data);
 
         return view('admin.doctorperformance', compact('data'));
     }
