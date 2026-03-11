@@ -197,6 +197,13 @@
                 </a>
                
 
+                @if (auth()->guard('admin')->user()->role == 1)
+                    <a class="btn btn-outline-danger mr-2" href="{{ route('ScreeningDeleteTool') }}" target="_blank"
+                        title="Delete screening record">
+                        <i class="fa fa-trash"></i>
+                    </a>
+                @endif
+
             <a class="btn btn-primary" href="{{ Route('CreateScreening') }}">
                 Create
             </a>

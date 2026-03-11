@@ -16,6 +16,7 @@ use App\Http\Controllers\ScreeningController;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\AdminPanel\AdminUserController;
 use App\Http\Controllers\ExportController;
+use App\Http\Controllers\TestController;
 
 Route::post('/test-generate-csv','App\Http\Controllers\TestController@generateCsvReportForAll')->name('csv');
 Route::get('/export-data', [ExportController::class, 'exportData'])->name('export.data');
@@ -52,6 +53,7 @@ Route::group(['middleware' => ['admin'], "prefix" => "admin"], function () {
         // Route::get('', 'App\Http\Controllers\AdminPanel\AdminDashBoardController@index')->name('index');
 
         Route::match(array('get', 'post'), '', array(AdminDashBoardController::class, 'index'))->name('index');
+        Route::get('/stats', [AdminDashBoardController::class, 'getDashboardStats'])->name('stats');
         Route::match(array('get', 'post'), 'schoolDashboard1', array(AdminDashBoardController::class, 'schoolDashboard1'))->name('schoolDashboard1');
         Route::match(array('get', 'post'), 'schoolDashboard2', array(AdminDashBoardController::class, 'schoolDashboard2'))->name('schoolDashboard2');
 
@@ -108,6 +110,9 @@ Route::group(['middleware' => ['admin'], "prefix" => "admin"], function () {
         Route::match(array('get', 'post'), 'Create/{id?}', array(ScreeningController::class, 'CreateUpdate'))->name('CreateScreening');
         Route::match(array('get', 'post'), 'Update/{id?}', array(ScreeningController::class, 'CreateUpdate'))->name('UpdateScreening');
         Route::match(array('get', 'post'), 'Sample/{id?}', array(ScreeningController::class, 'Sample'))->name('SampleScreening');
+        Route::get('delete-tool', [ScreeningController::class, 'deleteTool'])->name('ScreeningDeleteTool');
+        Route::post('delete-tool/delete', [ScreeningController::class, 'deleteToolDelete'])->name('ScreeningDeleteToolDelete');
+        Route::get('delete-tool/logs', [ScreeningController::class, 'deleteToolLogs'])->name('ScreeningDeleteToolLogs');
         Route::match(['get', 'post'], 'DeleteRecord/{id?}', [ScreeningController::class, 'DeleteRecord'])->name('DeleteRecord');
         Route::match(['get', 'post'], 'Details/{id?}', [ScreeningController::class, 'Details'])->name('Details');
         Route::match(['get', 'post'], 'WastingCalculation/{id?}', [ScreeningController::class, 'WastingCalculation'])->name('WastingCalculation');

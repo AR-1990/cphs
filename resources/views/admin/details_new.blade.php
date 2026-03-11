@@ -431,7 +431,7 @@
                                                 else if (ageNormalized >= 1 && ageNormalized <= 4) { min = 100; max = 110; }
                                                 else if (ageNormalized >= 5 && ageNormalized <= 9) { min = 105; max = 120; }
                                                 else if (ageNormalized >= 12 && ageNormalized <= 13) { min = 110; max = 130; }
-                                                else if (ageNormalized > 13) { min = 131; max = 200; }
+                                                else if (ageNormalized > 13) { min = 110; max = 130; }
                                             }
                                             if (min !== null && max !== null && !isNaN(systolic)) {
                                                 if (systolic < min) { statusEl.textContent = 'LOW'; statusEl.classList.add('text-danger'); }

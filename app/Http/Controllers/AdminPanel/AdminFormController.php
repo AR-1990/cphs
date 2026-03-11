@@ -3884,6 +3884,7 @@ class AdminFormController extends Controller
             ->select(
                 'schools.id',
                 'schools.school_name',
+                'schools.turnover',
                 DB::raw('(SELECT COUNT(*) FROM form_entries fe WHERE fe.school = schools.id) as total_students')
             )
             ->groupBy('schools.id', 'schools.school_name')

@@ -6331,7 +6331,7 @@ $('.NutritionistOptionsAttribute').each(function() {
                     } else if (ageNormalized >= 12 && ageNormalized <= 13) {
                         min = 110; max = 130;
                     }else if (ageNormalized > 13) {
-                        min = 131; max = 200;
+                        min = 110; max = 130;
                     }
                 }
 

@@ -24,6 +24,7 @@ use App\Models\Labs;
 use Illuminate\Support\Facades\Artisan;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use App\Models\CalendarEvents;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -2071,6 +2072,173 @@ foreach ($entries as $entry) {
       return view('Screening.Details', $data);
 
       /*return view('admin.GeneralInfo', $data);*/
+   }
+
+   public function deleteTool(Request $request)
+   {
+      $user = Auth::guard('admin')->user();
+      if (!$user || (string) $user->role !== '1') {
+         abort(403);
+      }
+
+      $searchedId = $request->query('entry_id');
+      $record = null;
+
+      if (!empty($searchedId) && is_numeric($searchedId)) {
+         $record = DB::table('form_entries')
+            ->leftJoin('schools', 'form_entries.school', '=', 'schools.id')
+            ->leftJoin('users', 'form_entries.enterby', '=', 'users.id')
+            ->select(
+               'form_entries.id',
+               'form_entries.name',
+               'form_entries.lname',
+               'form_entries.grno',
+               'form_entries.enterby',
+               'form_entries.created_at',
+               'schools.school_name as school_name',
+               'users.fullname as enterby_name'
+            )
+            ->where('form_entries.id', (int) $searchedId)
+            ->first();
+      }
+
+      return view('Screening.DeleteTool', [
+         'searchedId' => $searchedId,
+         'record' => $record,
+      ]);
+   }
+
+   public function deleteToolLogs(Request $request)
+   {
+      $user = Auth::guard('admin')->user();
+      if (!$user || (string) $user->role !== '1') {
+         abort(403);
+      }
+
+      if (!Schema::hasTable('screening_deletion_logs')) {
+         return DataTables::of(collect([]))->make(true);
+      }
+
+      $query = DB::table('screening_deletion_logs as l')
+         ->leftJoin('users as u', 'l.deleted_by_admin_id', '=', 'u.id')
+         ->select(
+            'l.id',
+            'l.entry_id',
+            'l.deleted_by_admin_id',
+            'l.reason',
+            'l.snapshot',
+            'l.created_at',
+            DB::raw('COALESCE(u.fullname, "") as deleted_by_name')
+         )
+         ->orderBy('l.id', 'desc');
+
+      return DataTables::of($query)
+         ->addColumn('student_name', function ($row) {
+            $snapshot = null;
+            if (!empty($row->snapshot)) {
+               $snapshot = json_decode($row->snapshot, true);
+            }
+            $name = '';
+            if (is_array($snapshot)) {
+               $name = trim(((string) ($snapshot['name'] ?? '')) . ' ' . ((string) ($snapshot['lname'] ?? '')));
+            }
+            return $name !== '' ? $name : '-';
+         })
+         ->addColumn('school_name', function ($row) {
+            $snapshot = null;
+            if (!empty($row->snapshot)) {
+               $snapshot = json_decode($row->snapshot, true);
+            }
+            if (is_array($snapshot)) {
+               $school = trim((string) ($snapshot['school_name'] ?? ''));
+               return $school !== '' ? $school : '-';
+            }
+            return '-';
+         })
+         ->editColumn('created_at', function ($row) {
+            return $row->created_at ? Carbon::parse($row->created_at)->format('Y-m-d H:i:s') : 'N/A';
+         })
+         ->editColumn('deleted_by_name', function ($row) {
+            $name = trim((string) ($row->deleted_by_name ?? ''));
+            if ($name !== '') {
+               return $name;
+            }
+            return $row->deleted_by_admin_id ?? '-';
+         })
+         ->make(true);
+   }
+
+   public function deleteToolDelete(Request $request)
+   {
+      $user = Auth::guard('admin')->user();
+      if (!$user || (string) $user->role !== '1') {
+         abort(403);
+      }
+
+      if (!Schema::hasTable('screening_deletion_logs')) {
+         Session::flash("error_message", "Deletion logs table is missing. Please run migrations first.");
+         return redirect()->route('ScreeningDeleteTool');
+      }
+
+      $validated = $request->validate([
+         'entry_id' => ['required', 'integer', 'min:1'],
+         'reason' => ['required', 'string', 'min:3', 'max:2000'],
+      ]);
+
+      $entryId = (int) $validated['entry_id'];
+      $reason = trim((string) $validated['reason']);
+
+      $formEntry = form_entry::where('id', $entryId)->first();
+      if (!$formEntry) {
+         Session::flash("error_message", "Record not exist");
+         return redirect()->route('ScreeningDeleteTool', ['entry_id' => $entryId]);
+      }
+
+      $snapshotRow = DB::table('form_entries')
+         ->leftJoin('schools', 'form_entries.school', '=', 'schools.id')
+         ->leftJoin('users', 'form_entries.enterby', '=', 'users.id')
+         ->select(
+            'form_entries.id',
+            'form_entries.name',
+            'form_entries.lname',
+            'form_entries.grno',
+            'form_entries.school',
+            'schools.school_name as school_name',
+            'form_entries.enterby',
+            'users.fullname as enterby_name',
+            'form_entries.created_at'
+         )
+         ->where('form_entries.id', $entryId)
+         ->first();
+
+      $snapshot = null;
+      if ($snapshotRow) {
+         $snapshot = json_encode($snapshotRow);
+      }
+
+      DB::beginTransaction();
+      try {
+         DB::table('screening_deletion_logs')->insert([
+            'entry_id' => $entryId,
+            'deleted_by_admin_id' => (int) $user->id,
+            'reason' => $reason,
+            'snapshot' => $snapshot,
+            'created_at' => Carbon::now(),
+         ]);
+
+         form_entry::where('id', $entryId)->delete();
+         FormData::where('entry_id', $entryId)->delete();
+         CalendarEvents::where('event_id', $entryId)->where('event_type', 2)->update(['deleted' => 1]);
+
+         DB::commit();
+      } catch (\Throwable $e) {
+         DB::rollBack();
+         Session::flash("error_message", "Some issue occurs try later");
+         return redirect()->route('ScreeningDeleteTool', ['entry_id' => $entryId]);
+      }
+
+      Session::flash("success_message", "Record Deleted");
+      return redirect()->route('ScreeningDeleteTool', ['entry_id' => $entryId]);
    }
 
 
