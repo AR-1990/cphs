@@ -227,6 +227,17 @@ class PDFController extends Controller
             '12' => '12',
         ];
         $classLabel = ($classCode !== null && array_key_exists($classCode, $classMap)) ? $classMap[$classCode] : $classCode;
+        $classLabelForDisplay = $classLabel;
+        $schoolName = $school && isset($school->school_name) ? (string) $school->school_name : '';
+        $isAvicennaSchool = ($school && isset($school->id) && (int) $school->id === 7) || preg_match('/avic/i', $schoolName);
+        if ($isAvicennaSchool && $classLabelForDisplay !== null) {
+            $normalized = strtoupper(str_replace([' ', '-'], '', (string) $classLabelForDisplay));
+            if ($normalized === 'KG1') {
+                $classLabelForDisplay = 'PREP 1';
+            } elseif ($normalized === 'KG2') {
+                $classLabelForDisplay = 'PREP 2';
+            }
+        }
 
         // Class-based Development fields mapping
         $developmentClassFields = [];
@@ -265,7 +276,7 @@ class PDFController extends Controller
             "City" => isset($resultArray[0]['city']) ? 'Karachi' : null,
             "Area" => isset($resultArray[0]['area']) ? $areas : null,
             "class_section" => $resultArray[0]['class_section'] ?? '-',
-            "class" => $classLabel ?? null,
+            "class" => $classLabelForDisplay ?? null,
             "Date of Birth" => isset($resultArray[0]['dob']) ? $resultArray[0]['dob'] : null,
             "Emergency Contact" => isset($resultArray[0]['Emergency_Contact_Number']) ? $resultArray[0]['Emergency_Contact_Number'] : null,
             "GR #" => isset($resultArray[0]['Gr_Number']) ? $resultArray[0]['Gr_Number'] : null,
